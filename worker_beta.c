@@ -159,59 +159,9 @@ void handle_sigusr_alrm(int sig){
     // be wrapped up, time's up! 
     // first, inform the nieghboor 
     // process that the cpu will be
-    // free, and then just pause
+    // free
     time_is_up = true;
     kill(nieghboor_pid, SIGUSR2);
-
-
-
-    /*
-    (this following code is conceptually correct, but practically it does not work as
-    intended, since there is some sort of a race condition, where both processes
-    will receive sigusr1 at the same time !, and since they receive it at the
-    same time, at this point the nieghboor is free and this one is also free, so
-    they will both send signals to each others telling each others that they
-    will be both occupied so they continue working at the same time, until they
-    finish then they will notify each other that they are now free, and the
-    scenario can go on and on as long as they both have some queued tasks, so
-    this is not really what you want, as simple trick is to actually sleep a bit
-    here, but maybe that does not suite your style !)
-
-    UPDATE: even the sleep does not seem to be working, maybe you need to only 
-    set the sleep on one of the processes and not both (need to test a bit more)
-    */
-
-
-    // if nieghboor is not occupied 
-    // we can actually continue on 
-    // our queued tasks.
-    if (!nieghboor_occupied && missed_tasks_count > 0) {
-
-        // // sleep a bit to avoid a race 
-        // // condition 
-        // sleep(1);
-
-        // send a sigusr1 to the 
-        // current process
-        kill(getpid(), SIGUSR1);
-
-        // NOTE: this is a bit dangerous in
-        // a sense that we could actually 
-        // receive signals while we are here 
-        // in the if statement block.
-        //
-        // If the received signal is SIGUSR1
-        // well then it is ok, that was planned!
-        //
-        // But if we recieve SIGUSR2, then we can
-        // actually send SIGUSR1 to slef twice
-        // this should not cause any harm since 
-        // we actually check if the nieghboor is 
-        // occupied or not in the SIGUSR1 handler.
-    }
-
-
-    // pause();
     return;
 }
 
