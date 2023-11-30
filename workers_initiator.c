@@ -22,7 +22,7 @@
 *
 *   This way, the workers will read from that shared memory, so
 *   technically, no locking is requied, (it is read only), and 
-*   figure out all the nieghboors pids, and that can be easily 
+*   figure out all the neighbors pids, and that can be easily 
 *   done just by traversing the array and regarding all the pids 
 *   that are diffrent then the worker process pid as some neighboor
 *   pid.

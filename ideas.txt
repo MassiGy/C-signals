@@ -1,0 +1,60 @@
+I was thinking about a auto retry mechanism, where a given process is not recieving the 
+alarm, and the neighbor is still not occupied. This means that the CPU is free, and we
+can actually continue on our missed/queued tasks.
+
+I added this logic just after handling the SIGALRM signal but it did not work when both
+processes receive a SIGUSR1 at the same time, while one of them is trying to finish all 
+the queued tasks, we will get a situation where they are both working in parallel and 
+both consider that the neighbor is free and then just at the reception of the SIGALRM
+both of them will think that the neighbor is occupied, since they've both just received
+a SIGUSR2 from one to another.
+
+Actual code.
+```C
+
+    /*
+    (this following code is conceptually correct, but practically it does not work as
+    intended, since there is some sort of a race condition, where both processes
+    will receive sigusr1 at the same time !, and since they receive it at the
+    same time, at this point the neighbor is free and this one is also free, so
+    they will both send signals to each others telling each others that they
+    will be both occupied so they continue working at the same time, until they
+    finish then they will notify each other that they are now free, and the
+    scenario can go on and on as long as they both have some queued tasks, so
+    this is not really what you want, as simple trick is to actually sleep a bit
+    here, but maybe that does not suite your style !)
+
+    UPDATE: even the sleep does not seem to be working
+    */
+
+
+    // if neighbor is not occupied 
+    // we can actually continue on 
+    // our queued tasks.
+    if (!neighbor_occupied && missed_tasks_count > 0) {
+
+        // // sleep a bit to avoid a race 
+        // // condition 
+        sleep(1);
+
+        // send a sigusr1 to the 
+        // current process
+        kill(getpid(), SIGUSR1);
+
+        // NOTE: this is a bit dangerous in
+        // a sense that we could actually 
+        // receive signals while we are here 
+        // in the if statement block.
+        //
+        // If the received signal is SIGUSR1
+        // well then it is ok, that was planned!
+        //
+        // But if we recieve SIGUSR2, then we can
+        // actually send SIGUSR1 to slef twice
+        // this should not cause any harm since 
+        // we actually check if the neighbor is 
+        // occupied or not in the SIGUSR1 handler.
+    }
+
+
+

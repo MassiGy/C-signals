@@ -1,19 +1,15 @@
-
 /*
-* worker_beta is just a worker called beta since it is the second to
-* be implemented.
-*
-* This worker program will illustrate a solution for the third exercice
-* in the 2022-2023 exam handout, about managing two worker processes in 
-* presence of a mono core cpu, without any one of them crushing the other
-* (i.e, one can only take out the cpu if the other one pulled of from it)
-* also, we need to make sure that these processes stay as deamons by default
-* and activate to do the processing as soon as a SIGUSR1 signal is fired and
-* received.
-* */
-
-
-
+ * worker_beta is just a worker called beta since it is the second to
+ * be implemented.
+ *
+ * This worker program will illustrate a solution for the third exercice
+ * in the 2022-2023 exam handout, about managing two worker processes in
+ * presence of a mono core cpu, without any one of them crushing the other
+ * (i.e, one can only take out the cpu if the other one pulled of from it)
+ * also, we need to make sure that these processes stay as deamons by default
+ * and activate to do the processing as soon as a SIGUSR1 signal is fired and
+ * received.
+ * */
 
 #include <signal.h>
 #include <stdbool.h>
@@ -24,12 +20,12 @@
 
 
 // set the global boolean var, that indicates 
-// wheter if the nieghboor worker process is 
+// wheter if the neighbor worker process is 
 // currently occupied or not.
-bool nieghboor_occupied = false;
+bool neighbor_occupied = false;
 
-// keep track of the nieghboor pid
-pid_t nieghboor_pid = -1;
+// keep track of the neighbor pid
+pid_t neighbor_pid = -1;
 
 // keep track if the calculation should
 // continue or not (alarm up or not ?)
@@ -45,22 +41,23 @@ void calculation();
 // declare our handler for sigusr1
 void handle_sigusr_one(int sig){
 
-    printf("recieved a sigusr_one\n");
-    printf("nieghboor_occupied ?: %s\n", nieghboor_occupied ? "true": "false");
-    printf("queued tasks: %d\n", missed_tasks_count);
+    /* for debugging */
+    // printf("recieved a sigusr_one\n");
+    // printf("neighbor_occupied ?: %s\n", neighbor_occupied ? "true": "false");
+    // printf("queued tasks: %d\n", missed_tasks_count);
 
     // make sure that the calculation 
     // will go on if possible
     time_is_up = false;
 
 
-    if (!nieghboor_occupied) {
+    if (!neighbor_occupied) {
 
         // send a sigusr2 to the second
-        // worker process (the nieghboor)
+        // worker process (the neighbor)
         // to inform it that the current 
         // one is going to take the lead
-        kill(nieghboor_pid, SIGUSR2);
+        kill(neighbor_pid, SIGUSR2);
 
         // since this can be a retry call
         // decrement the upcomming retry 
@@ -78,7 +75,7 @@ void handle_sigusr_one(int sig){
         calculation();
 
     } else {
-        // the nieghboor is already doing
+        // the neighbor is already doing
         // something, and should not be 
         // distracted, so we will just
         // register this task as not done
@@ -95,31 +92,29 @@ void handle_sigusr_one(int sig){
 // declare our handler for sigusr2
 void handle_sigusr_two(int sig){
 
-    printf("recieved a sigusr_two\n");
-    printf("nieghboor_occupied ?: %s\n", !nieghboor_occupied ? "true": "false");
-    printf("queued tasks: %d\n", missed_tasks_count);
+    /* for debugging */
+    // printf("recieved a sigusr_two\n");
+    // printf("neighbor_occupied ?: %s\n", !neighbor_occupied ? "true": "false");
+    // printf("queued tasks: %d\n", missed_tasks_count);
 
     // if sigusr2 is received, and
     // the boolean flag is set to false
-    // this means that the nieghboor
+    // this means that the neighbor
     // process is currently working
     // and this one should wait
-    if(!nieghboor_occupied){
-        nieghboor_occupied = true;
+    if(!neighbor_occupied){
+        neighbor_occupied = true;
 
         // then make sure that any 
         // going calculation stops!
         time_is_up = true;
 
-        // pause();
-        return;
     }
-
     // otherwise, this means that
-    // the nieghboor process had
+    // the neighbor process had
     // just finished its work
-    if(nieghboor_occupied){
-        nieghboor_occupied = false;
+    else{
+        neighbor_occupied = false;
 
         // if so, then the cpu is 
         // free, and we can take 
@@ -143,25 +138,26 @@ void handle_sigusr_two(int sig){
             // here without firing up another
             // signal, but we will need to decrement
             // our missed taks counter and also send
-            // a sigusr2 to the nieghboor
+            // a sigusr2 to the neighbor
         }
     }
 }
 // declare our handler for alrm
 void handle_sigusr_alrm(int sig){
 
-    printf("recieved a sigusr_alrm\n");
-    printf("nieghboor_occupied ?: %s\n", nieghboor_occupied ? "true": "false");
-    printf("queued tasks: %d\n", missed_tasks_count);
+    /* for debugging */
+    // printf("recieved a sigusr_alrm\n");
+    // printf("neighbor_occupied ?: %s\n", neighbor_occupied ? "true": "false");
+    // printf("queued tasks: %d\n", missed_tasks_count);
 
     // if the alrm is on, this 
     // means that the work should
     // be wrapped up, time's up! 
-    // first, inform the nieghboor 
+    // first, inform the neighbor 
     // process that the cpu will be
     // free
     time_is_up = true;
-    kill(nieghboor_pid, SIGUSR2);
+    kill(neighbor_pid, SIGUSR2);
     return;
 }
 
@@ -174,11 +170,11 @@ int main(int argc, char* argv[]){
 
 
     // scan for user input
-    printf("Insert the nieghboor pid: ");
-    scanf("%d",&nieghboor_pid);
+    printf("Insert the neighbor pid: ");
+    scanf("%d",&neighbor_pid);
 
     // confirm the usre input
-    printf("Nieghboor pid: %d\n", nieghboor_pid);
+    printf("Nieghboor pid: %d\n", neighbor_pid);
 
     
     // set our signals handlers
@@ -204,7 +200,7 @@ int main(int argc, char* argv[]){
 
 
 void calculation(){
-    printf("Running.");
+    printf("Running.\n");
     while (!time_is_up) {
     }
 }
