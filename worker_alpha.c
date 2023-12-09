@@ -1,15 +1,3 @@
-/*
- * worker_alpha is just a worker called alpha since it is the first to
- * be implemented.
- *
- * This worker program will illustrate a solution for the third exercice
- * in the 2022-2023 exam handout, about managing two worker processes in
- * presence of a mono core cpu, without any one of them crushing the other
- * (i.e, one can only take out the cpu if the other one pulled of from it)
- * also, we need to make sure that these processes stay as deamons by default
- * and activate to do the processing as soon as a SIGUSR1 signal is received.
- * */
-
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -17,12 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// set the global boolean var, that indicates
-// wheter if the neighbor worker process is
-// currently occupied or not.
 bool neighbor_occupied = false;
-
-// keep track of the neighbor pid
 pid_t neighbor_pid = -1;
 
 // keep track if the calculation should
@@ -32,16 +15,66 @@ bool time_is_up = false;
 // keep track of our missed tasks count
 int missed_tasks_count = 0;
 
-// delcare our calculattion function
+
 void calculation();
+void _logme(char *signal);
 
 // declare our handler for sigusr1
+void handle_sigusr_one(int sig);
+// declare our handler for sigusr2
+void handle_sigusr_two(int sig);
+// declare our handler for alrm
+void handle_sigusr_alrm(int sig);
+
+
+
+int main(int argc, char *argv[]) {
+
+    // print imidiatly the current process pid
+    printf("Current pid: %d\n", getpid());
+
+    // scan for user input
+    printf("Insert the neighbor pid: ");
+    scanf("%d", &neighbor_pid);
+
+    // confirm the usre input
+    printf("Nieghbor pid: %d\n", neighbor_pid);
+
+    // set our signals handlers
+    signal(SIGUSR1, &handle_sigusr_one);
+    signal(SIGUSR2, &handle_sigusr_two);
+    signal(SIGALRM, &handle_sigusr_alrm);
+
+    // pause, and run in the background
+    // as default behaviour
+    while (true) {
+        // put the pause function in a
+        // while true loop to be applicable
+        // even after the first signal reception
+        pause();
+    }
+
+    return 0;
+}
+
+void calculation() {
+    printf("Running.\n");
+    while (!time_is_up) {
+    }
+}
+
+void _logme(char *recieved_signal){
+   printf("nieghboor occupied? %s", neighbor_occupied ? "true":"false");
+   printf("missed tasks? %d", missed_tasks_count);
+   printf("time is up? %s", time_is_up ? "true":"false");
+   printf("recieved signal? %s", recieved_signal);
+}
+
+
 void handle_sigusr_one(int sig) {
 
-    /* for debugging */
-    // printf("recieved a sigusr_one\n");
-    // printf("neighbor_occupied ?: %s\n", neighbor_occupied ? "true": "false");
-    // printf("queued tasks: %d\n", missed_tasks_count);
+    // log some info
+    _logme("SIGUSR1");
 
     // make sure that the calculation
     // will go on if possible
@@ -83,13 +116,11 @@ void handle_sigusr_one(int sig) {
         // pause()
     }
 }
-// declare our handler for sigusr2
+
 void handle_sigusr_two(int sig) {
 
-    /* for debugging */
-    // printf("recieved a sigusr_two\n");
-    // printf("neighbor_occupied ?: %s\n", !neighbor_occupied ? "true" : "false");
-    // printf("queued tasks: %d\n", missed_tasks_count);
+    // log some info
+    _logme("SIGUSR2");
 
     // if sigusr2 is received, and
     // the boolean flag is set to false
@@ -102,48 +133,33 @@ void handle_sigusr_two(int sig) {
         // then make sure that any
         // going calculation stops!
         time_is_up = true;
-
+        return;
     }
+
     // otherwise, this means that
     // the neighbor process had
     // just finished its work
-    else {
-        neighbor_occupied = false;
+    neighbor_occupied = false;
 
-        // if so, then the cpu is
-        // free, and we can take
-        // it up,
-
-        if (missed_tasks_count > 0) {
-            // if there is missed tasks
-            // then just fire up
-            // a retry call to current
-            // process via the current
-            // pid and a sigusr1 signal
-            kill(getpid(), SIGUSR1);
-            return;
-
-            // NOTE: this is a bit dangerous
-            // since the superviser process
-            // can send a sigusr1 at the
-            // same time, thus one of the signals
-            // will be dropped. We can bypass this
-            // by calling the calculation method
-            // here without firing up another
-            // signal, but we will need to decrement
-            // our missed taks counter and also send
-            // a sigusr2 to the neighbor, and the 
-            // handler for SIGUSR1 already does that
-        }
+    // if so, then the cpu is
+    // free, and we can take
+    // it up,
+    if (missed_tasks_count > 0) {
+        // if there is missed tasks
+        // then just fire up
+        // a retry call to current
+        // process via the current
+        // pid and a sigusr1 signal
+        kill(getpid(), SIGUSR1);
+        return;
     }
 }
-// declare our handler for alrm
+
 void handle_sigusr_alrm(int sig) {
 
-    /* for debugging */
-    // printf("recieved a sigusr_alrm\n");
-    // printf("neighbor_occupied ?: %s\n", neighbor_occupied ? "true" : "false");
-    // printf("queued tasks: %d\n", missed_tasks_count);
+    // log some info
+    _logme("SIGALRM");
+
 
     // if the alrm is on, this
     // means that the work should
@@ -156,40 +172,3 @@ void handle_sigusr_alrm(int sig) {
     return;
 }
 
-int main(int argc, char *argv[]) {
-
-    // print imidiatly the current process pid
-    printf("Current pid: %d\n", getpid());
-
-    // scan for user input
-    printf("Insert the neighbor pid: ");
-    scanf("%d", &neighbor_pid);
-
-    // confirm the usre input
-    printf("Nieghboor pid: %d\n", neighbor_pid);
-
-    // set our signals handlers
-    // for SIGUSR1
-    signal(SIGUSR1, &handle_sigusr_one);
-    // for SIGUSR2
-    signal(SIGUSR2, &handle_sigusr_two);
-    // for SIGALRM
-    signal(SIGALRM, &handle_sigusr_alrm);
-
-    // pause, and run in the background
-    // as default behaviour
-    while (true) {
-        // put the pause function in a
-        // while true loop to be applicable
-        // even after the first signal reception
-        pause();
-    }
-
-    return 0;
-}
-
-void calculation() {
-    printf("Running.\n");
-    while (!time_is_up) {
-    }
-}

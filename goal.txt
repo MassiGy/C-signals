@@ -1,0 +1,8 @@
+/*
+ * These programs will illustrate a solution for the third exercice
+ * in the 2022-2023 exam handout, about managing two worker processes in
+ * presence of a mono core cpu, without any one of them crushing the other
+ * (i.e, one can only take out the cpu if the other one pulled of from it)
+ * also, we need to make sure that these processes stay as deamons by default
+ * and activate to do the processing as soon as a SIGUSR1 signal is received.
+ * */

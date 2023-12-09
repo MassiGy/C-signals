@@ -1,0 +1,17 @@
+
+NOTE:  in the C programs, when a worker receives a SIGUSR2 signal we check if
+there is any missed tasks, and if there is and the nieghbor is not occupied
+then we send a SIGUSR1 to self, so as this current process will continue on its
+queued tasks. The logic and the spirit is good but the practicality of it is
+not that great. The reason for that is simply because we are using userspace
+signals and these can be overrided, so imagine we are at that specific block of
+code where we are going to send to self a SIGUSR1, and at the same time the
+manager of all these workers sends to the same process (current) a SIGUSR1. In
+this case the last signal will be ignored, since userspace signals are not
+queued as real time signals. So even if the signal of the manager is higher in
+priority and class per say, it can get dicarded. This is a design flaw, and it
+should be regarded. 
+
+For my case, I assumed that it was okey if the higher class signal is discarded
+since the same signal is fired from the current process, the source is not the
+same but the signal type is the same, so it is okey for me.

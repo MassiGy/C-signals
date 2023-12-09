@@ -3,3 +3,5 @@ worker_beta
 worker
 main
 
+worker_alpha.log
+worker_beta.log
