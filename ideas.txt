@@ -56,5 +56,3 @@ Actual code.
         // occupied or not in the SIGUSR1 handler.
     }
 
-
-
