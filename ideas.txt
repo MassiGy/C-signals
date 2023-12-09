@@ -1,4 +1,4 @@
-I was thinking about a auto retry mechanism, where a given process is not recieving the 
+I was thinking about a auto retry mechanism, for any given process that recieves the 
 alarm, and the neighbor is still not occupied. This means that the CPU is free, and we
 can actually continue on our missed/queued tasks.
 
@@ -25,6 +25,7 @@ Actual code.
     here, but maybe that does not suite your style !)
 
     UPDATE: even the sleep does not seem to be working
+    SUGGETION: for this, it is better to use semaphores
     */
 
 
